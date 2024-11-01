@@ -13,10 +13,7 @@ async function getBucketObjectList(s3Client, bucketName, prefix = '') {
       ? response.CommonPrefixes.map((p) => p.Prefix)
       : [];
     const files = response.Contents ? response.Contents.map((c) => c.Key) : [];
-    console.log(`Objects in bucket "${bucketName}" with prefix "${prefix}":`, {
-      folders,
-      files,
-    });
+
     return { folders, files };
   } catch (error) {
     console.error(`Error listing objects in bucket "${bucketName}":`, error);

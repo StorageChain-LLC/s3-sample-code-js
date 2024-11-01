@@ -20,44 +20,81 @@ console.log('S3 Gateway URL:', s3GatewayUrl);
 const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
 
 (async () => {
-  // Get list of Buckets
+  /*
+    Fetches a list of all buckets from the S3 client
+    s3Client: The initialized S3 client object
+  */
   console.log('Executing getBucketsList');
   const buckets = await getBucketsList(s3Client);
   console.log('buckets:', buckets);
 
+  /*
+    Selects the first bucket's name and sets a prefix for object filtering
+    Name of the first bucket
+    Prefix to filter objects within a specific folder or subfolder
+  */
   const bucketName = buckets[0].Name;
-  const prefix = 'SubFolder'; // Folder or subfolder name
+  const prefix = 'SubFolder';
 
+  /*
+    Retrieves a list of objects from the specified bucket filtered by the prefix
+    s3Client: S3 client, bucketName: Name of the bucket, prefix: Prefix for filtering objects
+  */
   console.log('Executing getBucketObjectList');
-  //   const bucketObjects = await getBucketObjectList(s3Client, bucketName, prefix);
-  //   console.log('bucketObjects:', bucketObjects);
+  const bucketObjects = await getBucketObjectList(s3Client, bucketName, prefix);
+  console.log('bucketObjects:', bucketObjects);
 
+  /*
+    Retrieves a paginated list of objects from the specified bucket filtered by the prefix
+    The initialized S3 client object
+    Name of the bucket
+    Prefix to filter objects within a specific folder or subfolder
+    Initial page number for pagination
+  */
+  console.log('Executing getBucketObjectListPaginated');
   const bucketObjectsPaginated = await getBucketObjectListPaginated(
     s3Client,
     bucketName,
-    prefix
+    prefix,
+    0
   );
   console.log('bucketObjectsPaginated:', bucketObjectsPaginated);
   console.log('Files Length', bucketObjectsPaginated?.files.length);
 
-  //   if (bucketObjects?.files?.length > 0) {
-  //     console.log('Executing getSignedUrl');
-  //     const seletedFile = bucketObjects?.files[0];
-  //     const signedUrl = await getSignedUrl(
-  //       { s3Client, accessKeyId, secretAccessKey },
-  //       bucketName,
-  //       seletedFile
-  //     );
-  //     console.log('signedUrl:', signedUrl);
-  //   }
+  /*
+    Generates a signed URL for the first file in the list, if any files are present
+    s3Client: S3 client, accessKeyId: Access key ID, secretAccessKey: Secret access key
+    Name of the bucket
+    Key of the selected file for which to generate the signed URL
+  */
+  if (bucketObjects?.files?.length > 0) {
+    console.log('Executing getSignedUrl');
+    const selectedFile = bucketObjects?.files[0];
+    const signedUrl = await getSignedUrl(
+      { s3Client, accessKeyId, secretAccessKey },
+      bucketName,
+      selectedFile
+    );
+    console.log('signedUrl:', signedUrl);
+  }
 
+  /*
+    Uploads a single file to the specified bucket
+    The initialized S3 client object
+    Name of the bucket to upload the file to
+    The key under which to store the file in the bucket
+    The file name to be used in the bucket
+    The local file path of the file to be uploaded
+  */
   console.log('Executing uploadSingleFile');
-  // Uploading of a file
-  // Make sure key name is unique everytime you upload a file.
-  //   const filePath = path.join('./testing/176.png'); // Path to the file you want to upload
+  const filePath = path.join('./testing/176.png');
+  await uploadSingleFile(s3Client, bucketName, 'abc', '176.png', filePath);
 
-  //   await uploadSingleFile(s3Client, bucketName, 'abc', '176.png', filePath);
-
+  /*
+    Uploads an entire folder to the specified bucket
+    The initialized S3 client object
+    Name of the bucket to which the folder will be uploaded
+  */
   console.log('Executing uploadFolder');
-  //   await uploadFolder(s3Client, bucketName);
+  await uploadFolder(s3Client, bucketName);
 })();
