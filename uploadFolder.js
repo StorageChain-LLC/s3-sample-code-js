@@ -34,7 +34,7 @@ async function uploadSingleFile(client, bucketName, key, filePath) {
 }
 
 // Example usage
-const folderPath = path.join(__dirname, 'SubFolder'); // Path to the folder you want to upload
+const folderPath = path.join(__dirname, './testing/SubFolder-23'); // Path to the folder you want to upload
 console.log('folderPath:', folderPath);
 
 // Function to upload a whole folder to an S3 bucket

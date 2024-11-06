@@ -6,6 +6,8 @@ const uploadSingleFile = require('./uploadFile');
 const uploadFolder = require('./uploadFolder');
 const path = require('path');
 const getBucketObjectListPaginated = require('./getBucketObjectListPaginated');
+const download_single_Object_from_bucket = require('./downloadSingleFile');
+const downloadFolder = require('./downloadFolder');
 
 require('dotenv').config(); // Load environment variables
 
@@ -34,7 +36,7 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Prefix to filter objects within a specific folder or subfolder
   */
   const bucketName = buckets[0].Name;
-  const prefix = 'SubFolder';
+  const prefix = 'SubFolder-23';
 
   /*
     Retrieves a list of objects from the specified bucket filtered by the prefix
@@ -87,8 +89,8 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     The local file path of the file to be uploaded
   */
   console.log('Executing uploadSingleFile');
-  const filePath = path.join('./testing/176.png');
-  await uploadSingleFile(s3Client, bucketName, 'abc', '176.png', filePath);
+  const filePath = path.join('./testing/0.png');
+  await uploadSingleFile(s3Client, bucketName, '', '0.png', filePath);
 
   /*
     Uploads an entire folder to the specified bucket
@@ -97,4 +99,22 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   */
   console.log('Executing uploadFolder');
   await uploadFolder(s3Client, bucketName);
+
+  // Download single file
+  console.log('Executing Download Single File');
+  await download_single_Object_from_bucket(
+    s3Client,
+    bucketName,
+    '0 - Copy (2).png',
+    './testing/0 - Copy (2).png'
+  );
+
+  // Download Folder
+  console.log('Executing Folder Download');
+  await downloadFolder(
+    s3Client,
+    bucketName,
+    'SubFolder-23/',
+    './testing/SubFolder-23-2'
+  );
 })();

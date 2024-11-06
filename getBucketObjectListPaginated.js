@@ -20,7 +20,7 @@ async function getBucketObjectListPaginated(
       : [];
     const files = response.Contents ? response.Contents.map((c) => c.Key) : [];
 
-    return { folders, files };
+    return { folders, files, content: response.Contents };
   } catch (error) {
     console.error(`Error listing objects in bucket "${bucketName}":`, error);
     throw error;
