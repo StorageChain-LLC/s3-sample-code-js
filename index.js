@@ -53,15 +53,15 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Prefix to filter objects within a specific folder or subfolder
     Initial page number for pagination
   */
-  console.log('Executing getBucketObjectListPaginated');
-  const bucketObjectsPaginated = await getBucketObjectListPaginated(
-    s3Client,
-    bucketName,
-    prefix,
-    0
-  );
-  console.log('bucketObjectsPaginated:', bucketObjectsPaginated);
-  console.log('Files Length', bucketObjectsPaginated?.files.length);
+  // console.log('Executing getBucketObjectListPaginated');
+  // const bucketObjectsPaginated = await getBucketObjectListPaginated(
+  //   s3Client,
+  //   bucketName,
+  //   prefix,
+  //   0
+  // );
+  // console.log('bucketObjectsPaginated:', bucketObjectsPaginated);
+  // console.log('Files Length', bucketObjectsPaginated?.files.length);
 
   /*
     Generates a signed URL for the first file in the list, if any files are present
@@ -69,16 +69,16 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Name of the bucket
     Key of the selected file for which to generate the signed URL
   */
-  if (bucketObjects?.files?.length > 0) {
-    console.log('Executing getSignedUrl');
-    const selectedFile = bucketObjects?.files[0];
-    const signedUrl = await getSignedUrl(
-      { s3Client, accessKeyId, secretAccessKey },
-      bucketName,
-      selectedFile
-    );
-    console.log('signedUrl:', signedUrl);
-  }
+  // if (bucketObjects?.files?.length > 0) {
+  //   console.log('Executing getSignedUrl');
+  //   const selectedFile = bucketObjects?.files[0];
+  //   const signedUrl = await getSignedUrl(
+  //     { s3Client, accessKeyId, secretAccessKey },
+  //     bucketName,
+  //     selectedFile
+  //   );
+  //   console.log('signedUrl:', signedUrl);
+  // }
 
   /*
     Uploads a single file to the specified bucket
@@ -88,26 +88,26 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     The file name to be used in the bucket
     The local file path of the file to be uploaded
   */
-  console.log('Executing uploadSingleFile');
-  const filePath = path.join('./testing/0.png');
-  await uploadSingleFile(s3Client, bucketName, '', '0.png', filePath);
+  // console.log('Executing uploadSingleFile');
+  // const filePath = path.join('./testing/0.png');
+  // await uploadSingleFile(s3Client, bucketName, '', '0.png', filePath);
 
   /*
     Uploads an entire folder to the specified bucket
     The initialized S3 client object
     Name of the bucket to which the folder will be uploaded
   */
-  console.log('Executing uploadFolder');
-  await uploadFolder(s3Client, bucketName);
+  // console.log('Executing uploadFolder');
+  // await uploadFolder(s3Client, bucketName);
 
   // Download single file
-  console.log('Executing Download Single File');
-  await download_single_Object_from_bucket(
-    s3Client,
-    bucketName,
-    '0 - Copy (2).png',
-    './testing/0 - Copy (2).png'
-  );
+  // console.log('Executing Download Single File');
+  // await download_single_Object_from_bucket(
+  //   s3Client,
+  //   bucketName,
+  //   '0 - Copy (2).png',
+  //   './testing/0 - Copy (2).png'
+  // );
 
   // Download Folder
   console.log('Executing Folder Download');
