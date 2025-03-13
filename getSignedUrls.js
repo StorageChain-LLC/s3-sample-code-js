@@ -1,23 +1,22 @@
-const { HttpRequest } = require('@aws-sdk/protocol-http');
-const { NodeHttpHandler } = require('@aws-sdk/node-http-handler');
+const { HttpRequest } = require("@aws-sdk/protocol-http");
+const { NodeHttpHandler } = require("@aws-sdk/node-http-handler");
 
-async function executeCustomRoute(s3Creds, path, method = 'GET', body = null) {
+async function executeCustomRoute(s3Creds, path, method = "GET", body = null) {
   const endpointDetails = await s3Creds.s3Client.config.endpoint();
+  console.log("`/${encodeURI(path)}`", path);
   const request = new HttpRequest({
     method,
     protocol: endpointDetails?.protocol,
     hostname: endpointDetails?.hostname,
-    path: `/${path}`,
-
+    path: `/${path}`, // Encode the entire path
     headers: {
       host: endpointDetails?.hostname,
       Authorization: `Credential=${s3Creds.accessKeyId}/${s3Creds.secretAccessKey}`,
     },
   });
-
   if (body) {
     request.body = JSON.stringify(body);
-    request.headers['Content-Type'] = 'application/json';
+    request.headers["Content-Type"] = "application/json";
   }
 
   const handler = new NodeHttpHandler();
@@ -26,10 +25,10 @@ async function executeCustomRoute(s3Creds, path, method = 'GET', body = null) {
     const { response } = await handler.handle(request);
 
     const responseBody = await new Promise((resolve, reject) => {
-      let responseData = '';
-      response.body.on('data', (chunk) => (responseData += chunk));
-      response.body.on('end', () => resolve(responseData));
-      response.body.on('error', reject);
+      let responseData = "";
+      response.body.on("data", (chunk) => (responseData += chunk));
+      response.body.on("end", () => resolve(responseData));
+      response.body.on("error", reject);
     });
 
     return {
@@ -37,22 +36,23 @@ async function executeCustomRoute(s3Creds, path, method = 'GET', body = null) {
       body: JSON.parse(responseBody),
     };
   } catch (error) {
-    console.error('Error executing custom route:', error);
+    console.error("Error executing custom route:", error);
     throw error;
   }
 }
 
 const getSignedUrl = async (s3Creds, bucketName, objectWithPath) => {
-  const parts = objectWithPath.split('/');
+  const parts = objectWithPath.split("/");
   const objectName = parts.pop();
 
-  let prefix = '';
+  let prefix = "";
 
   if (parts?.length > 0) {
-    prefix = parts.join('/') + '/';
+    prefix = parts.map(encodeURIComponent).join("/") + "/"; // Encode each part of the prefix
   }
 
   const encodedObjectName = encodeURIComponent(objectName);
+  console.log("🚀 ~ getSignedUrl ~ encodedObjectName:", encodedObjectName);
   const response = await executeCustomRoute(
     s3Creds,
     `${bucketName}/${prefix}${encodedObjectName}/signed-url`
