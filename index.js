@@ -2,12 +2,13 @@ const S3ClientInstance = require("./s3");
 const getBucketsList = require("./getBucketsList");
 const getBucketObjectList = require("./getBucketObjectList");
 const getSignedUrl = require("./getSignedUrls");
-const uploadSingleFile = require("./uploadFile");
+const s3Upload = require("./uploadFile");
 const uploadFolder = require("./uploadFolder");
 const path = require("path");
 const getBucketObjectListPaginated = require("./getBucketObjectListPaginated");
 const download_single_Object_from_bucket = require("./downloadSingleFile");
 const downloadFolder = require("./downloadFolder");
+const getS3Object = require("./getObject");
 
 require("dotenv").config(); // Load environment variables
 
@@ -69,17 +70,17 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Name of the bucket
     Key of the selected file for which to generate the signed URL
   */
-  if (bucketObjects?.files?.length > 0) {
-    console.log("Executing getSignedUrl");
-    const selectedFile = bucketObjects?.files[0];
-    console.log("🚀 ~ selectedFile:", selectedFile);
-    const signedUrl = await getSignedUrl(
-      { s3Client, accessKeyId, secretAccessKey },
-      bucketName,
-      selectedFile
-    );
-    console.log("signedUrl:", signedUrl);
-  }
+  // if (bucketObjects?.files?.length > 0) {
+  //   console.log("Executing getSignedUrl");
+  //   const selectedFile = bucketObjects?.files[0];
+  //   console.log("🚀 ~ selectedFile:", selectedFile);
+  //   const signedUrl = await getSignedUrl(
+  //     { s3Client, accessKeyId, secretAccessKey },
+  //     bucketName,
+  //     selectedFile
+  //   );
+  //   console.log("signedUrl:", signedUrl);
+  // }
 
   /*
     Uploads a single file to the specified bucket
@@ -89,9 +90,15 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     The file name to be used in the bucket
     The local file path of the file to be uploaded
   */
-  // console.log('Executing uploadSingleFile');
-  // const filePath = path.join('./testing/0.png');
-  // await uploadSingleFile(s3Client, bucketName, '', '0.png', filePath);
+  // console.log("Executing uploadSingleFile");
+  // const filePath = path.join("./testing/multi-part-pdf-file.pdf");
+  // await s3Upload.uploadFile(
+  //   s3Client,
+  //   bucketName,
+  //   "",
+  //   "multi-part-pdf-file.pdf",
+  //   filePath
+  // );
 
   /*
     Uploads an entire folder to the specified bucket
@@ -102,13 +109,13 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   // await uploadFolder(s3Client, bucketName);
 
   // Download single file
-  // console.log('Executing Download Single File');
-  // await download_single_Object_from_bucket(
-  //   s3Client,
-  //   bucketName,
-  //   '0 - Copy (2).png',
-  //   './testing/0 - Copy (2).png'
-  // );
+  console.log("Executing Download Single File");
+  await download_single_Object_from_bucket(
+    s3Client,
+    bucketName,
+    "0.png",
+    "./testing/0-1.png"
+  );
 
   // Download Folder
   // console.log('Executing Folder Download');
@@ -118,4 +125,17 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   //   'SubFolder-23/',
   //   './testing/SubFolder-23-2'
   // );
+
+  // Get Single Object
+  // console.log("Executing file download with getObjectCommand");
+  // if (bucketObjects?.files?.length > 0) {
+  //   const fileName = bucketObjects?.files[0];
+  //   const prefix = "";
+  //   const objectContent = await getS3Object(
+  //     s3Client,
+  //     bucketName,
+  //     `${prefix}/${fileName}`
+  //   );
+  //   console.log("🚀 ~ objectContent:", objectContent);
+  // }
 })();

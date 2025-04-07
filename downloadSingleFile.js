@@ -1,5 +1,5 @@
-const { GetObjectCommand } = require('@aws-sdk/client-s3');
-const fs = require('fs');
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
+const fs = require("fs");
 
 const download_single_Object_from_bucket = async (
   client,
@@ -7,6 +7,7 @@ const download_single_Object_from_bucket = async (
   key,
   downloadPath
 ) => {
+  console.log("🚀 ~ key:", key);
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: key,
@@ -21,13 +22,13 @@ const download_single_Object_from_bucket = async (
     // Pipe the response body to the file
     response.Body.pipe(fileStream);
 
-    fileStream.on('finish', () => {
+    fileStream.on("finish", () => {
       console.log(
         `Object "${key}" downloaded successfully to "${downloadPath}".`
       );
     });
 
-    fileStream.on('error', (err) => {
+    fileStream.on("error", (err) => {
       console.error(`Error writing file "${downloadPath}":`, err);
     });
   } catch (err) {

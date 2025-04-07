@@ -1,229 +1,133 @@
-// const { PutObjectCommand } = require('@aws-sdk/client-s3');
-// const fs = require('fs');
-// const path = require('path');
-
-// // Upload a single file into the bucket
-// async function uploadSingleFile(client, bucketName, prefix, key, filePath) {
-//   try {
-//     // Dynamically import the ESM module
-//     const mimeModule = await import('mime');
-//     const mime = mimeModule.default;
-
-//     // Create a readable stream from the file
-//     const fileStream = fs.createReadStream(filePath);
-
-//     // Get the file's MIME type (e.g., image/jpeg)
-//     const contentType = mime.getType(filePath);
-//     const fullKey = prefix ? `${prefix}/${key}` : key;
-//     // Upload the file using a stream
-//     const uploadParams = {
-//       Bucket: bucketName,
-//       Key: fullKey,
-//       Body: fileStream,
-//       ContentType: contentType,
-//     };
-
-//     // Send the command to upload the file
-//     try {
-//       const data = await client.send(new PutObjectCommand(uploadParams));
-//       console.log('data', data?.on);
-//       console.log(
-//         `File "${key}" uploaded successfully to bucket "${bucketName}".`
-//       );
-//     } catch (uploadError) {
-//       console.error('Failed to upload file:', uploadError);
-//       console.error('Error details:', JSON.stringify(uploadError, null, 2));
-//     }
-//   } catch (err) {
-//     console.error('Unexpected error uploading file:', err);
-//   }
-// }
-
-// module.exports = uploadSingleFile;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// const { PutObjectCommand } = require('@aws-sdk/client-s3');
-// const fs = require('fs');
-// const { Transform } = require('stream');
-
-// // Function to create a progress-tracking stream
-// function createProgressStream(fileSize, onProgress) {
-//   let uploadedBytes = 0;
-
-//   return new Transform({
-//     transform(chunk, encoding, callback) {
-//       uploadedBytes += chunk.length;
-//       const progress = (uploadedBytes / fileSize) * 100;
-//       onProgress(progress.toFixed(2)); // Call the progress callback with decimals
-//       callback(null, chunk);
-//     },
-//   });
-// }
-
-// // Upload a single file with continuous progress tracking
-// async function uploadSingleFile(client, bucketName, prefix, key, filePath) {
-//   try {
-//     const mimeModule = await import('mime');
-//     const mime = mimeModule.default;
-//     const contentType = mime.getType(filePath);
-//     const fullKey = prefix ? `${prefix}/${key}` : key;
-
-//     // Get the file size for calculating progress
-//     const fileSize = fs.statSync(filePath).size;
-
-//     // Create a readable stream from the file and pipe it through the progress stream
-//     const fileStream = fs.createReadStream(filePath);
-//     const progressStream = createProgressStream(fileSize, (progress) => {
-//       console.log(`Progress: ${progress}%`);
-//     });
-
-//     // Pipe the file stream through the progress stream
-//     const uploadParams = {
-//       Bucket: bucketName,
-//       Key: fullKey,
-//       Body: fileStream.pipe(progressStream),
-//       ContentType: contentType,
-//     };
-
-//     // Use PutObjectCommand to upload the file
-//     const data = await client.send(new PutObjectCommand(uploadParams));
-//     console.log(
-//       `File "${key}" uploaded successfully to bucket "${bucketName}".`
-//     );
-//   } catch (error) {
-//     console.error('Failed to upload file:', error);
-//   }
-// }
-
-// module.exports = uploadSingleFile;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// const { PutObjectCommand } = require('@aws-sdk/client-s3');
-// const fs = require('fs');
-// const { Transform } = require('stream');
-
-// function createProgressStream(fileSize, onProgress) {
-//   let uploadedBytes = 0;
-
-//   return new Transform({
-//     transform(chunk, encoding, callback) {
-//       uploadedBytes += chunk.length;
-//       const progress = (uploadedBytes / fileSize) * 100;
-//       onProgress(progress.toFixed(2)); // Call progress callback with decimals
-//       callback(null, chunk);
-//     },
-//   });
-// }
-
-// async function uploadSingleFile(client, bucketName, prefix, key, filePath) {
-//   try {
-//     const mimeModule = await import('mime');
-//     const mime = mimeModule.default;
-//     const contentType = mime.getType(filePath);
-//     const fullKey = prefix ? `${prefix}/${key}` : key;
-
-//     const fileSize = fs.statSync(filePath).size;
-
-//     const fileStream = fs.createReadStream(filePath);
-//     const progressStream = createProgressStream(fileSize, (progress) => {
-//       console.log(`Progress: ${progress}%`);
-//       if (progress >= 100) {
-//         console.log('Upload complete, finalizing...');
-//       }
-//     });
-
-//     const uploadParams = {
-//       Bucket: bucketName,
-//       Key: fullKey,
-//       Body: fileStream.pipe(progressStream),
-//       ContentType: contentType,
-//     };
-
-//     const data = await client.send(new PutObjectCommand(uploadParams));
-//     console.log(
-//       `File "${key}" uploaded successfully to bucket "${bucketName}".`
-//     );
-//   } catch (error) {
-//     console.error('Failed to upload file:', error);
-//   }
-// }
-
-// module.exports = uploadSingleFile;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+const fs = require("fs");
 const {
+  S3Client,
+  PutObjectCommand,
   CreateMultipartUploadCommand,
-  UploadPartCommand,
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
-} = require('@aws-sdk/client-s3');
-const fs = require('fs');
+} = require("@aws-sdk/client-s3");
+const mime = require("mime-types");
 
-// Upload a single file in chunks with parallel progress tracking
-async function uploadSingleFile(client, bucketName, prefix, key, filePath) {
+const S3_MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MB
+
+async function uploadFile(client, bucketName, prefix, key, filePath) {
   const fileSize = fs.statSync(filePath).size;
-  const chunkSize = 2 * 1024 * 1024; // 5 MB per part (minimum for S3 multipart upload)
   const fullKey = prefix ? `${prefix}/${key}` : key;
+
+  const mimeType = mime.lookup(filePath);
+  console.log("🚀 ~ uploadFile ~ mimeType:", mimeType);
+
+  if (fileSize <= S3_MIN_PART_SIZE) {
+    // Single-part upload
+    console.log(`Uploading ${key} as a single object (${fileSize} bytes)...`);
+    await uploadSinglePart(client, bucketName, fullKey, filePath, mimeType);
+  } else {
+    // Multipart upload
+    console.log(
+      `Uploading ${key} using multipart upload (${fileSize} bytes)...`
+    );
+    await uploadMultipart(
+      client,
+      bucketName,
+      fullKey,
+      filePath,
+      fileSize,
+      mimeType
+    );
+  }
+}
+
+async function uploadSinglePart(
+  client,
+  bucketName,
+  key,
+  filePath,
+  contentType
+) {
+  try {
+    const fileStream = fs.createReadStream(filePath);
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: fileStream,
+      ContentType: contentType,
+    });
+
+    await client.send(command);
+    console.log(`File "${key}" uploaded successfully to "${bucketName}".`);
+  } catch (error) {
+    console.error(`Error uploading file "${key}":`, error);
+  }
+}
+
+async function uploadMultipart(
+  client,
+  bucketName,
+  key,
+  filePath,
+  fileSize,
+  contentType
+) {
+  const chunkSize = S3_MIN_PART_SIZE;
   const fileStream = fs.createReadStream(filePath, {
     highWaterMark: chunkSize,
   });
-  const uploadId = await startMultipartUpload(client, bucketName, fullKey);
+  // const uploadId = await startMultipartUpload(client, bucketName, key);
+  // const parts = [];
+  // let partNumber = 1;
+  // let uploadedBytes = 0;
 
-  try {
-    let partNumber = 1;
-    let uploadedBytes = 0;
-    const parts = [];
-    const uploadPromises = [];
+  // try {
+  //   for await (const chunk of fileStream) {
+  //     let success = false;
+  //     let attempts = 0;
+  //     let ETag = null;
 
-    for await (const chunk of fileStream) {
-      // Create a promise for each chunk upload
-      const uploadPromise = (async () => {
-        const uploadPartParams = {
-          Bucket: bucketName,
-          Key: fullKey,
-          PartNumber: partNumber,
-          UploadId: uploadId,
-          Body: chunk,
-        };
+  //     while (!success && attempts < 3) {
+  //       // Retry up to 3 times if needed
+  //       try {
+  //         const uploadPartParams = {
+  //           Bucket: bucketName,
+  //           Key: key,
+  //           PartNumber: partNumber,
+  //           UploadId: uploadId,
+  //           Body: chunk,
+  //           ContentType: contentType,
+  //         };
 
-        const { ETag } = await client.send(
-          new UploadPartCommand(uploadPartParams)
-        );
-        parts[partNumber - 1] = { PartNumber: partNumber, ETag };
+  //         const response = await client.send(
+  //           new CreateMultipartUploadCommand(uploadPartParams)
+  //         );
+  //         ETag = response.ETag;
+  //         success = true;
+  //       } catch (err) {
+  //         console.error(
+  //           `Error uploading part ${partNumber}, attempt ${attempts + 1}:`,
+  //           err
+  //         );
+  //         attempts++;
+  //         await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait before retry
+  //       }
+  //     }
 
-        uploadedBytes += chunk.length;
-        const progress = ((uploadedBytes / fileSize) * 100).toFixed(2);
-        console.log(`Progress: ${progress}% (Part ${partNumber})`);
+  //     if (!ETag) {
+  //       throw new Error(`Failed to upload part ${partNumber} after 3 attempts`);
+  //     }
 
-        partNumber++;
-      })();
+  //     parts.push({ PartNumber: partNumber, ETag });
+  //     uploadedBytes += chunk.length;
+  //     const progress = ((uploadedBytes / fileSize) * 100).toFixed(2);
+  //     console.log(`Progress: ${progress}% (Part ${partNumber})`);
 
-      uploadPromises.push(uploadPromise);
+  //     partNumber++;
+  //   }
 
-      // Execute the uploads in batches of 5 parts
-      if (uploadPromises.length === 5) {
-        await Promise.all(uploadPromises);
-        uploadPromises.length = 0; // Clear the batch
-      }
-    }
-
-    // Await any remaining uploads in the final batch
-    if (uploadPromises.length > 0) {
-      await Promise.all(uploadPromises);
-    }
-
-    // Complete the multipart upload
-    await completeMultipartUpload(client, bucketName, fullKey, uploadId, parts);
-    console.log(
-      `File "${key}" uploaded successfully to bucket "${bucketName}".`
-    );
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    // await abortMultipartUpload(client, bucketName, fullKey, uploadId);
-  }
+  //   await completeMultipartUpload(client, bucketName, key, uploadId, parts);
+  //   console.log(`File "${key}" uploaded successfully using multipart upload.`);
+  // } catch (error) {
+  //   console.error("Error uploading file:", error);
+  //   await abortMultipartUpload(client, bucketName, key, uploadId);
+  // }
 }
 
 async function startMultipartUpload(client, bucketName, key) {
@@ -242,16 +146,23 @@ async function completeMultipartUpload(
   uploadId,
   parts
 ) {
+  console.log(
+    "Completing Multipart Upload with Parts:",
+    JSON.stringify(parts, null, 2)
+  );
+
   const command = new CompleteMultipartUploadCommand({
     Bucket: bucketName,
     Key: key,
     UploadId: uploadId,
     MultipartUpload: { Parts: parts },
   });
+
   return client.send(command);
 }
 
 async function abortMultipartUpload(client, bucketName, key, uploadId) {
+  console.log(`Aborting multipart upload for ${key}`);
   const command = new AbortMultipartUploadCommand({
     Bucket: bucketName,
     Key: key,
@@ -260,4 +171,9 @@ async function abortMultipartUpload(client, bucketName, key, uploadId) {
   return client.send(command);
 }
 
-module.exports = uploadSingleFile;
+// Export the functions for use in other files
+module.exports = {
+  uploadFile,
+  uploadSinglePart,
+  uploadMultipart,
+};
