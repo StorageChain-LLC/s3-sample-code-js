@@ -72,62 +72,62 @@ async function uploadMultipart(
   const fileStream = fs.createReadStream(filePath, {
     highWaterMark: chunkSize,
   });
-  // const uploadId = await startMultipartUpload(client, bucketName, key);
-  // const parts = [];
-  // let partNumber = 1;
-  // let uploadedBytes = 0;
+  const uploadId = await startMultipartUpload(client, bucketName, key);
+  const parts = [];
+  let partNumber = 1;
+  let uploadedBytes = 0;
 
-  // try {
-  //   for await (const chunk of fileStream) {
-  //     let success = false;
-  //     let attempts = 0;
-  //     let ETag = null;
+  try {
+    for await (const chunk of fileStream) {
+      let success = false;
+      let attempts = 0;
+      let ETag = null;
 
-  //     while (!success && attempts < 3) {
-  //       // Retry up to 3 times if needed
-  //       try {
-  //         const uploadPartParams = {
-  //           Bucket: bucketName,
-  //           Key: key,
-  //           PartNumber: partNumber,
-  //           UploadId: uploadId,
-  //           Body: chunk,
-  //           ContentType: contentType,
-  //         };
+      while (!success && attempts < 3) {
+        // Retry up to 3 times if needed
+        try {
+          const uploadPartParams = {
+            Bucket: bucketName,
+            Key: key,
+            PartNumber: partNumber,
+            UploadId: uploadId,
+            Body: chunk,
+            ContentType: contentType,
+          };
 
-  //         const response = await client.send(
-  //           new CreateMultipartUploadCommand(uploadPartParams)
-  //         );
-  //         ETag = response.ETag;
-  //         success = true;
-  //       } catch (err) {
-  //         console.error(
-  //           `Error uploading part ${partNumber}, attempt ${attempts + 1}:`,
-  //           err
-  //         );
-  //         attempts++;
-  //         await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait before retry
-  //       }
-  //     }
+          const response = await client.send(
+            new CreateMultipartUploadCommand(uploadPartParams)
+          );
+          ETag = response.ETag;
+          success = true;
+        } catch (err) {
+          console.error(
+            `Error uploading part ${partNumber}, attempt ${attempts + 1}:`,
+            err
+          );
+          attempts++;
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait before retry
+        }
+      }
 
-  //     if (!ETag) {
-  //       throw new Error(`Failed to upload part ${partNumber} after 3 attempts`);
-  //     }
+      if (!ETag) {
+        throw new Error(`Failed to upload part ${partNumber} after 3 attempts`);
+      }
 
-  //     parts.push({ PartNumber: partNumber, ETag });
-  //     uploadedBytes += chunk.length;
-  //     const progress = ((uploadedBytes / fileSize) * 100).toFixed(2);
-  //     console.log(`Progress: ${progress}% (Part ${partNumber})`);
+      parts.push({ PartNumber: partNumber, ETag });
+      uploadedBytes += chunk.length;
+      const progress = ((uploadedBytes / fileSize) * 100).toFixed(2);
+      console.log(`Progress: ${progress}% (Part ${partNumber})`);
 
-  //     partNumber++;
-  //   }
+      partNumber++;
+    }
 
-  //   await completeMultipartUpload(client, bucketName, key, uploadId, parts);
-  //   console.log(`File "${key}" uploaded successfully using multipart upload.`);
-  // } catch (error) {
-  //   console.error("Error uploading file:", error);
-  //   await abortMultipartUpload(client, bucketName, key, uploadId);
-  // }
+    await completeMultipartUpload(client, bucketName, key, uploadId, parts);
+    console.log(`File "${key}" uploaded successfully using multipart upload.`);
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    await abortMultipartUpload(client, bucketName, key, uploadId);
+  }
 }
 
 async function startMultipartUpload(client, bucketName, key) {

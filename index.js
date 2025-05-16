@@ -9,6 +9,8 @@ const getBucketObjectListPaginated = require("./getBucketObjectListPaginated");
 const download_single_Object_from_bucket = require("./downloadSingleFile");
 const downloadFolder = require("./downloadFolder");
 const getS3Object = require("./getObject");
+const multipartUploadFile = require("./multipartUpload");
+// const multipartUploadFile = require("./multipartUpload");
 
 require("dotenv").config(); // Load environment variables
 
@@ -36,7 +38,7 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Name of the first bucket
     Prefix to filter objects within a specific folder or subfolder
   */
-  const bucketName = buckets[1].Name;
+  const bucketName = buckets[0].Name;
   const prefix = "";
 
   /*
@@ -44,8 +46,8 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     s3Client: S3 client, bucketName: Name of the bucket, prefix: Prefix for filtering objects
   */
   // console.log("Executing getBucketObjectList");
-  const bucketObjects = await getBucketObjectList(s3Client, bucketName, prefix);
-  console.log("bucketObjects:", bucketObjects);
+  // const bucketObjects = await getBucketObjectList(s3Client, bucketName, prefix);
+  // console.log("bucketObjects:", bucketObjects);
 
   /*
     Retrieves a paginated list of objects from the specified bucket filtered by the prefix
@@ -54,7 +56,7 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Prefix to filter objects within a specific folder or subfolder
     Initial page number for pagination
   */
-  // console.log('Executing getBucketObjectListPaginated');
+  // console.log("Executing getBucketObjectListPaginated");
   // const bucketObjectsPaginated = await getBucketObjectListPaginated(
   //   s3Client,
   //   bucketName,
@@ -90,8 +92,11 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     The file name to be used in the bucket
     The local file path of the file to be uploaded
   */
-  // console.log("Executing uploadSingleFile");
-  // const filePath = path.join("./testing/multi-part-pdf-file.pdf");
+  console.log("Executing uploadSingleFile");
+  const filePath = path.join("./testing/multi-part-pdf-file.pdf");
+  const key = "multi-part-pdf-file.pdf";
+  await multipartUploadFile({ s3Client, bucketName, filePath, key });
+
   // await s3Upload.uploadFile(
   //   s3Client,
   //   bucketName,
@@ -105,25 +110,25 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     The initialized S3 client object
     Name of the bucket to which the folder will be uploaded
   */
-  // console.log('Executing uploadFolder');
+  // console.log("Executing uploadFolder");
   // await uploadFolder(s3Client, bucketName);
 
   // Download single file
-  console.log("Executing Download Single File");
-  await download_single_Object_from_bucket(
-    s3Client,
-    bucketName,
-    "0.png",
-    "./testing/0-1.png"
-  );
+  // console.log("Executing Download Single File");
+  // await download_single_Object_from_bucket(
+  //   s3Client,
+  //   bucketName,
+  //   "0.png",
+  //   "./testing/0-1.png"
+  // );
 
   // Download Folder
-  // console.log('Executing Folder Download');
+  // console.log("Executing Folder Download");
   // await downloadFolder(
   //   s3Client,
   //   bucketName,
-  //   'SubFolder-23/',
-  //   './testing/SubFolder-23-2'
+  //   "SubFolder-23/",
+  //   "./testing/SubFolder-23-2"
   // );
 
   // Get Single Object
@@ -138,4 +143,6 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   //   );
   //   console.log("🚀 ~ objectContent:", objectContent);
   // }
+
+  // handleFileUpload();
 })();

@@ -8,7 +8,7 @@ const S3ClientInstance = (s3GatewayUrl, accessKeyId, secretAccessKey) => {
       secretAccessKey: secretAccessKey,
     },
     endpoint: s3GatewayUrl,
-    forcePathStyle: true, // Needed for custom endpoints
+    forcePathStyle: true,
   });
 
   return instance;
