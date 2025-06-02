@@ -10,7 +10,9 @@ const download_single_Object_from_bucket = require("./downloadSingleFile");
 const downloadFolder = require("./downloadFolder");
 const getS3Object = require("./getObject");
 const multipartUploadFile = require("./multipartUpload");
+const copyObject = require("./copyObjectCommand");
 // const multipartUploadFile = require("./multipartUpload");
+const generateSignedUrl = require("./signedUrl");
 
 require("dotenv").config(); // Load environment variables
 
@@ -38,7 +40,7 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     Name of the first bucket
     Prefix to filter objects within a specific folder or subfolder
   */
-  const bucketName = buckets[0].Name;
+  const bucketName = buckets[3].Name;
   const prefix = "";
 
   /*
@@ -46,8 +48,8 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     s3Client: S3 client, bucketName: Name of the bucket, prefix: Prefix for filtering objects
   */
   // console.log("Executing getBucketObjectList");
-  // const bucketObjects = await getBucketObjectList(s3Client, bucketName, prefix);
-  // console.log("bucketObjects:", bucketObjects);
+  const bucketObjects = await getBucketObjectList(s3Client, bucketName, prefix);
+  console.log("bucketObjects:", bucketObjects);
 
   /*
     Retrieves a paginated list of objects from the specified bucket filtered by the prefix
@@ -84,6 +86,11 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   //   console.log("signedUrl:", signedUrl);
   // }
 
+  // const selectedFile = bucketObjects?.files[0];
+
+  // const signedUrl = await generateSignedUrl(s3Client, bucketName, selectedFile);
+  // console.log("signedUrl:", signedUrl);
+
   /*
     Uploads a single file to the specified bucket
     The initialized S3 client object
@@ -92,10 +99,10 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
     The file name to be used in the bucket
     The local file path of the file to be uploaded
   */
-  console.log("Executing uploadSingleFile");
-  const filePath = path.join("./testing/multi-part-pdf-file.pdf");
-  const key = "multi-part-pdf-file.pdf";
-  await multipartUploadFile({ s3Client, bucketName, filePath, key });
+  // console.log("Executing uploadSingleFile");
+  // const filePath = path.join("./testing/multi-part-pdf-file.pdf");
+  // const key = "multi-part-pdf-file-3.pdf";
+  // await multipartUploadFile({ s3Client, bucketName, filePath, key });
 
   // await s3Upload.uploadFile(
   //   s3Client,
@@ -118,8 +125,8 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   // await download_single_Object_from_bucket(
   //   s3Client,
   //   bucketName,
-  //   "0.png",
-  //   "./testing/0-1.png"
+  //   "large-doc.pdf",
+  //   "./testing/large-doc-2.pdf"
   // );
 
   // Download Folder
@@ -139,10 +146,20 @@ const s3Client = S3ClientInstance(s3GatewayUrl, accessKeyId, secretAccessKey);
   //   const objectContent = await getS3Object(
   //     s3Client,
   //     bucketName,
-  //     `${prefix}/${fileName}`
+  //     `${fileName}`
   //   );
   //   console.log("🚀 ~ objectContent:", objectContent);
   // }
 
   // handleFileUpload();
+
+  const selectedFile = bucketObjects?.files[2];
+
+  const copyParams = {
+    Bucket: bucketName,
+    CopySource: `${bucketName}/${selectedFile}`,
+    Key: `copy-${selectedFile}`,
+  };
+
+  await copyObject(s3Client, copyParams);
 })();
